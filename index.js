@@ -29,28 +29,28 @@ function generateTrackingId() {
 app.use(express.json());
 app.use(cors());
 
-const verifyFBToken = async(req, res, next) =>{
+const verifyFBToken = async (req, res, next) => {
 
-// console.log('headers in the middleware', req.headers?.authorization)
+  // console.log('headers in the middleware', req.headers?.authorization)
 
-const token = req.headers.authorization;
+  const token = req.headers.authorization;
 
-if(!token){
-  return res.status(401).send({message: 'unauthorized access'})
-}
+  if (!token) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
 
-try{
-   const idToken = token.split(' ')[1];
-   const decoded = await admin.auth().verifyIdToken(idToken);
-   console.log('decoded in the token', decoded);
+  try {
+    const idToken = token.split(' ')[1];
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    console.log('decoded in the token', decoded);
     req.decoded_email = decoded.email;
-   next();
-}
-catch(err){
- return res.status(401).send({message: 'unauthorized access'})
-}
+    next();
+  }
+  catch (err) {
+    return res.status(401).send({ message: 'unauthorized access' })
+  }
 
-  
+
 }
 
 
@@ -76,18 +76,19 @@ async function run() {
     const userCollection = db.collection('users');
     const parcelsCollection = db.collection('parcels');
     const paymentCollection = db.collection('payments');
+    const ridersCollection = db.collection('riders');
 
     //users related apis
-    app.post('/users', async(req, res) =>{
+    app.post('/users', async (req, res) => {
       const user = req.body;
       user.role = 'user';
       user.createAt = new Date();
       const email = user.email;
-      const userExists = await userCollection.findOne({email})
+      const userExists = await userCollection.findOne({ email })
 
-       if(userExists){
-        return res.send({message: 'user exists'})
-       }
+      if (userExists) {
+        return res.send({ message: 'user exists' })
+      }
 
 
       const result = await userCollection.insertOne(user);
@@ -282,16 +283,39 @@ async function run() {
         query.customerEmail = email;
 
         // check email address
-        if(email !== req.decoded_email){
-          return res.status(403).send({message: 'forbiden access'})
+        if (email !== req.decoded_email) {
+          return res.status(403).send({ message: 'forbiden access' })
         }
 
       }
-      const cursor = paymentCollection.find(query).sort({paidAt: -1});
+      const cursor = paymentCollection.find(query).sort({ paidAt: -1 });
       const result = await cursor.toArray();
       res.send(result);
     })
 
+
+    //riders related apis
+   app.get('/riders', async(req, res)=>{
+    const query = {}
+    if(req.query.status){
+      query.status = req.query.status;
+    }
+    const cursor = ridersCollection.find(query)
+    const result = await cursor.toArray();
+    res.send(result);
+   })
+
+
+
+    app.post('/riders', async(req, res) =>{
+      const rider = req.body;
+      rider.status = 'pending';
+      rider.createdAt = new Date();
+
+      const result = await ridersCollection.insertOne(rider);
+      res.send(result);
+
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
