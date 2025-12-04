@@ -420,6 +420,7 @@ console.log(query)
     //riders related apis
    app.get('/riders', async(req, res)=>{
     const {status, district, workStatus} = req.query;
+    console.log(req.query)
     const query = {}
     if(status){
       query.status = status;
@@ -434,6 +435,7 @@ console.log(query)
 
     const cursor = ridersCollection.find(query)
     const result = await cursor.toArray();
+    // console.log(result)
     res.send(result);
    })
 
@@ -443,6 +445,7 @@ console.log(query)
       const rider = req.body;
       rider.status = 'pending';
       rider.createdAt = new Date();
+      rider.workStatus = 'available'
 
       const result = await ridersCollection.insertOne(rider);
       res.send(result);
